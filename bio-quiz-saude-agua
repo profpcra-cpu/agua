@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Técnico - Água na Área da Saúde</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #0b1020;
+            --card-bg: rgba(30, 41, 59, 0.85);
+            --text-color: #f8fafc;
+            --primary: #0ea5e9;
+            --primary-glow: rgba(14, 165, 233, 0.4);
+            --accent: #10b981;
+            --success: #22c55e;
+            --error: #ef4444;
+            --gold: #fbbf24;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: radial-gradient(circle at 20% 0%, #0f172a 0%, #0b1020 60%);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex; justify-content: center; align-items: center;
+            padding: 16px;
+            overflow-x: hidden;
+        }
+        body::before, body::after {
+            content: ""; position: fixed; border-radius: 50%;
+            filter: blur(120px); opacity: 0.25; z-index: -1;
+            pointer-events: none;
+        }
+        body::before { width: 400px; height: 400px; background: #0ea5e9; top: -100px; left: -100px; }
+        body::after { width: 400px; height: 400px; background: #10b981; bottom: -100px; right: -100px; }
+
+        .quiz-container {
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 28px;
+            padding: 24px;
+            width: 100%; max-width: 600px;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.7);
+            text-align: center;
+            animation: cardIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+        }
+
+        @keyframes cardIn {
+            from { opacity: 0; transform: translateY(20px) scale(0.96); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .timer-bar {
+            width: 100%; height: 6px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 99px;
+            margin-bottom: 12px;
+            overflow: hidden;
+        }
+        .timer-fill {
+            height: 100%; width: 100%;
+            background: var(--gold);
+            border-radius: 99px;
+            transition: width 0.1s linear;
+        }
+
+        .progress-container {
+            width: 100%; height: 8px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 99px;
+            margin-bottom: 16px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%; width: 0%;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            border-radius: 99px;
+            transition: width 0.5s ease;
+            box-shadow: 0 0 10px var(--primary-glow);
+        }
+
+        .top-bar-info {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 12px; font-size: 13px; font-weight: 800;
+        }
+        .best-display {
+            background: rgba(14, 165, 233, 0.15);
+            color: #7dd3fc;
+            padding: 4px 10px; border-radius: 99px;
+            border: 1px solid rgba(14, 165, 233, 0.3);
+        }
+        .score-display {
+            background: rgba(251, 191, 36, 0.15);
+            color: var(--gold);
+            padding: 4px 10px; border-radius: 99px;
+            border: 1px solid rgba(251, 191, 36, 0.3);
+        }
+
+        .progress-bar-text {
+            font-size: 13px; font-weight: 800;
+            color: var(--accent);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .question-header {
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+            margin: 20px 0 16px;
+        }
+        .question-box {
+            font-size: 18px; font-weight: 700;
+            line-height: 1.4;
+            flex: 1;
+            text-align: left;
+        }
+        .btn-falar {
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 50%; width: 40px; height: 40px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; font-size: 18px; color: #fff;
+            transition: background 0.2s;
+            flex-shrink: 0;
+        }
+        .btn-falar:hover { background: rgba(14, 165, 233, 0.3); }
+
+        .cards-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+
+        .card-opcao {
+            background: rgba(255,255,255,0.04);
+            border: 2px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 14px 16px;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex; align-items: center; gap: 12px;
+            position: relative;
+            overflow: hidden;
+            user-select: none;
+            font-family: inherit;
+            color: inherit;
+            text-align: left;
+            width: 100%;
+        }
+        .card-opcao:focus-visible {
+            outline: 3px solid var(--primary);
+            outline-offset: 2px;
+        }
+        .card-opcao:hover:not(.disabled) {
+            transform: translateY(-2px);
+            border-color: var(--primary);
+            background: rgba(14, 165, 233, 0.12);
+            box-shadow: 0 8px 20px -4px var(--primary-glow);
+        }
+        .card-opcao.disabled {
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+        .card-icone {
+            font-size: 30px;
+            min-width: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .card-opcao span {
+            font-size: 14px; font-weight: 600;
+            line-height: 1.3;
+        }
+
+        .card-opcao.correto {
+            background: rgba(34, 197, 94, 0.25) !important;
+            border-color: var(--success) !important;
+            animation: acertoPulse 0.5s ease;
+        }
+        .card-opcao.incorreto {
+            background: rgba(239, 68, 68, 0.25) !important;
+            border-color: var(--error) !important;
+            animation: erroShake 0.4s ease;
+        }
+        @keyframes acertoPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.02); box-shadow: 0 0 25px var(--success); }
+            100% { transform: scale(1); }
+        }
+        @keyframes erroShake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-6px); }
+            75% { transform: translateX(6px); }
+        }
+
+        .feedback-badge {
+            position: absolute;
+            top: 10px; right: 12px;
+            background: var(--success);
+            color: #fff;
+            font-size: 12px; font-weight: 800;
+            padding: 2px 8px;
+            border-radius: 99px;
+            animation: cardIn 0.3s ease;
+        }
+
+        .final-screen {
+            display: flex; flex-direction: column; align-items: center; gap: 16px;
+            animation: cardIn 0.6s ease;
+        }
+        .medalha {
+            font-size: 80px;
+            animation: flutuar 2s infinite ease-in-out;
+            filter: drop-shadow(0 0 20px var(--gold));
+        }
+        @keyframes flutuar {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-12px); }
+        }
+        .final-screen h2 {
+            font-size: 26px; font-weight: 800;
+            background: linear-gradient(135deg, var(--gold), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .final-screen p {
+            font-size: 15px; color: #cbd5e1; line-height: 1.5;
+        }
+        .pontuacao-final {
+            font-size: 32px; font-weight: 800;
+            color: var(--gold);
+            margin: 4px 0;
+        }
+        .btn-reiniciar {
+            margin-top: 12px;
+            padding: 14px 28px;
+            border: none; border-radius: 14px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: #fff; font-weight: 800; font-size: 15px;
+            cursor: pointer;
+            box-shadow: 0 10px 25px -5px var(--primary-glow);
+            transition: transform 0.2s ease;
+            font-family: inherit;
+        }
+        .btn-reiniciar:hover { transform: scale(1.05); }
+        .btn-reiniciar:focus-visible {
+            outline: 3px solid var(--gold);
+            outline-offset: 2px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="quiz-container" id="quiz-container">
+        <div class="top-bar-info">
+            <div class="best-display" id="best-display">🏅 Melhor: 0</div>
+            <div class="score-display" id="score-display">⭐ 0 pts</div>
+        </div>
+        <div class="timer-bar">
+            <div class="timer-fill" id="timer-fill"></div>
+        </div>
+        <div class="progress-container">
+            <div class="progress-fill" id="progress-fill"></div>
+        </div>
+        <div class="progress-bar-text" id="bloco-indicador">Questão 1 de 10</div>
+        
+        <div class="question-header">
+            <div class="question-box" id="pergunta-texto">Carregando pergunta...</div>
+            <button class="btn-falar" id="btn-falar" title="Ouvir pergunta" aria-label="Ouvir pergunta">🔊</button>
+        </div>
+
+        <div class="cards-grid" id="grid-cards" role="group" aria-label="Opções de resposta"></div>
+    </div>
+
+    <script>
+        'use strict';
+
+        const blocosQuiz = [
+            {
+                bloco: 1,
+                pergunta: "No contexto da Enfermagem e da prevenção de infecções hospitalares (IRAS), qual é a finalidade primordial da água purificada/destilada em autoclaves?",
+                opcoes: [
+                    { texto: "Evitar o depósito de minerais (calcificação) e corrosão nos instrumentais e câmeras do equipamento.", icone: "⚙️", correto: true },
+                    { texto: "Acelerar o tempo de resfriamento dos pacotes cirúrgicos após o ciclo de esterilização.", icone: "⏱️", correto: false },
+                    { texto: "Garantir que a temperatura interna ultrapasse os 200°C obrigatórios.", icone: "🌡️", correto: false },
+                    { texto: "Reduzir o consumo de energia elétrica durante a fase de secagem a vácuo.", icone: "⚡", correto: false }
+                ]
+            },
+            {
+                bloco: 2,
+                pergunta: "Em Nutrição e Dietética, a água potável utilizada na higienização de hortaliças e frutas antes do consumo cru deve passar por um processo de sanitização que geralmente emprega:",
+                opcoes: [
+                    { texto: "Solução chlorada (hipoclorito de sódio) em diluição específica recomendada pela vigilância sanitária.", icone: "💧", correto: true },
+                    { texto: "Imersão em água fervente por exatamente 15 minutos para eliminar agrotóxicos.", icone: "🔥", correto: false },
+                    { texto: "Lavagem exclusiva com água corrente pressurizada sem aditivos químicos.", icone: "🚿", correto: false },
+                    { texto: "Aplicação de vinagre puro em spray com enxágue em água mineral.", icone: "🍃", correto: false }
+                ]
+            },
+            {
+                bloco: 3,
+                pergunta: "Na Saúde Bucal, os equipos odontológicos possuem reservatórios de água dedicados a refrigeração de alta/baixa rotação e seringa tríplice. Qual é o risco principal se essa água não passar por rigoroso controle microbiológico?",
+                opcoes: [
+                    { texto: "Formação de biofilmes nas tubulações, expondo pacientes e equipe à inalação de aerossóis contaminados (ex: Legionella).", icone: "🦠", correto: true },
+                    { texto: "Entupimento imediato das brocas diamantadas devido à alta concentração de flúor.", icone: "🦷", correto: false },
+                    { texto: "Alteração permanente na cor dos materiais restauradores compostos.", icone: "🎨", correto: false },
+                    { texto: "Inativação do anestésico local durante os procedimentos cirúrgicos.", icone: "💉", correto: false }
+                ]
+            },
+            {
+                bloco: 4,
+                pergunta: "Para pacientes em unidade de internação sob cuidados de Enfermagem que necessitam de controle rigoroso de balanço hídrico, o que deve ser computado como 'líquidos eliminados'?",
+                opcoes: [
+                    { texto: "Diurese, episódios de vômito, drenagens cirúrgicas, ostomias e perdas insensíveis estimadas.", icone: "📊", correto: true },
+                    { texto: "Apenas o volume total de urina colhido no período de 24 horas.", icone: "🚽", correto: false },
+                    { texto: "Suor visível e lágrimas eliminadas durante quadros de dor aguda.", icone: "💧", correto: false },
+                    { texto: "Volume de soro prescrito infundido por via intravenosa.", icone: "💉", correto: false }
+                ]
+            },
+            {
+                bloco: 5,
+                pergunta: "No âmbito da Nutrição Clínica, a água livre presente nas fórmulas enterais industrializadas ou dietas artesanais é fundamental para:",
+                opcoes: [
+                    { texto: "Garantir a hidratação adequada do paciente e prevenir complicações renais e desidratação hipernatrêmica.", icone: "🥥", correto: true },
+                    { texto: "Aumentar a viscosidade da fórmula para retardar o esvaziamento gástrico.", icone: "⏳", correto: false },
+                    { texto: "Substituir integralmente a administração de medicamentos por via oral.", icone: "💊", correto: false },
+                    { texto: "Evitar a absorção de macronutrientes essenciais no intestino delgado.", icone: "🧬", correto: false }
+                ]
+            },
+            {
+                bloco: 6,
+                pergunta: "Durante o procedimento de lavagem das mãos da equipe de saúde (técnica asséptica), a água desempenha papel essencial. Qual a recomendação correta quanto ao uso de torneiras e registros?",
+                opcoes: [
+                    { texto: "Devem ser acionados sem o contato direto das mãos limpas (pedal, sensor ou cotovelo) para evitar recontaminação.", icone: "🧼", correto: true },
+                    { texto: "Devem ser fechados manualmente com papel toalha após secagem completa dos punhos.", icone: "📜", correto: false },
+                    { texto: "Devem permanecer abertos durante todo o plantão para agilizar o atendimento.", icone: "🚰", correto: false },
+                    { texto: "O uso de água fria é proibido, devendo ser sempre utilizada água aquecida a 60°C.", icone: "🌡️", correto: false }
+                ]
+            },
+            {
+                bloco: 7,
+                pergunta: "Na preparação de soluções parenterais e reconstituição de medicamentos injetáveis na Enfermagem, qual tipo de água farmacopéica é estritamente obrigatório?",
+                opcoes: [
+                    { texto: "Água para Injeção (API) estéril e apirógena.", icone: "💉", correto: true },
+                    { texto: "Água potável filtrada em carvão ativado.", icone: "🚰", correto: false },
+                    { texto: "Água destilada comum de uso automotivo ou laboratorial básico.", icone: "🧪", correto: false },
+                    { texto: "Água mineral com gás esterilizada por radiação UV.", icone: "🥤", correto: false }
+                ]
+            },
+            {
+                bloco: 8,
+                pergunta: "Na manipulação de lactários e preparo de fórmulas infantis na Nutrição Hospitalar, a água fervida deve ser utilizada em qual temperatura para a diluição segura do pó?",
+                opcoes: [
+                    { texto: "Temperatura não inferior a 70°C para inativar patógenos como Cronobacter sakazakii, seguida de resfriamento adequado antes da oferta.", icone: "🍼", correto: true },
+                    { texto: "Exatamente a 100°C fervendo no momento do contato com a mamadeira.", icone: "🔥", correto: false },
+                    { texto: "Água gelada para preservar as vitaminas termolábeis do composto lácteo.", icone: "❄️", correto: false },
+                    { texto: "Temperatura ambiente, pois o pó já passa por esterilização industrial.", icone: "🌡️", correto: false }
+                ]
+            },
+            {
+                bloco: 9,
+                pergunta: "Em Saúde Bucal, qual é a finalidade principal do bochecho com água ou soluções antissépticas após procedimentos de profilaxia ou cirurgias periodontais?",
+                opcoes: [
+                    { texto: "Auxiliar na remoção física de detritos, sangue residual e auxiliar na limpeza do campo operatório sob supervisão.", icone: "🦷", correto: true },
+                    { texto: "Substituir a necessidade de escovação dental pelo paciente nos próximos 7 dias.", icone: "🪥", correto: false },
+                    { texto: "Promover o clareamento imediato do esmalte dentário exposto.", icone: "✨", correto: false },
+                    { texto: "Anestesiar as terminações nervosas da gengiva marginal.", icone: "🌿", correto: false }
+                ]
+            },
+            {
+                bloco: 10,
+                pergunta: "Considerando a gestão de riscos e segurança do paciente, qual é o impacto clínico da desidratação crônica em pacientes idosos acamados sob cuidados de Enfermagem?",
+                opcoes: [
+                    { texto: "Aumento expressivo no risco de formação de Lesões por Pressão (LPP), infecções urinárias e confusão mental aguda.", icone: "🛌", correto: true },
+                    { texto: "Redução natural da pressão arterial sistólica sem qualquer efeito colateral adverso.", icone: "📉", correto: false },
+                    { texto: "Melhora na eficácia da absorção de medicamentos diuréticos.", icone: "💊", correto: false },
+                    { texto: "Estabilização do balanço hídrico sem necessidade de monitoramento rigoroso.", icone: "📋", correto: false }
+                ]
+            }
+        ];
+
+        let indiceAtual = 0;
+        let pontuacao = 0;
+        let melhorPontuacao = parseInt(localStorage.getItem('quiz_tecnico_saude_best') || '0', 10);
+        let bloqueado = false;
+        let tempoRestante = 20;
+        let timerInterval = null;
+
+        let audioCtx = null;
+        function getAudioCtx() {
+            if (!audioCtx) {
+                try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {}
+            }
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume().catch(() => {});
+            }
+            return audioCtx;
+        }
+
+        function tocarSom(tipo) {
+            const ctx = getAudioCtx();
+            if (!ctx) return;
+            let notas = [];
+            if (tipo === 'acerto')  notas = [523.25, 659.25, 783.99];
+            else if (tipo === 'erro')   notas = [311.13, 233.08];
+            else if (tipo === 'vitoria') notas = [523.25, 659.25, 783.99, 1046.50];
+
+            const inicio = ctx.currentTime;
+            notas.forEach((freq, i) => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.value = freq;
+                const t0 = inicio + i * 0.12;
+                const t1 = t0 + 0.18;
+                gain.gain.setValueAtTime(0, t0);
+                gain.gain.linearRampToValueAtTime(0.18, t0 + 0.02);
+                gain.gain.exponentialRampToValueAtTime(0.001, t1);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(t0);
+                osc.stop(t1 + 0.02);
+            });
+        }
+
+        function falarTexto(texto) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(texto);
+                utterance.lang = 'pt-BR';
+                utterance.rate = 0.95;
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        function embaralhar(array) {
+            const copia = array.slice();
+            for (let i = copia.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [copia[i], copia[j]] = [copia[j], copia[i]];
+            }
+            return copia;
+        }
+
+        function iniciarTimer() {
+            clearInterval(timerInterval);
+            tempoRestante = 20;
+            const timerFill = document.getElementById('timer-fill');
+            
+            timerInterval = setInterval(() => {
+                tempoRestante -= 0.1;
+                const porcentagem = (tempoRestante / 20) * 100;
+                if (timerFill) timerFill.style.width = `${Math.max(porcentagem, 0)}%`;
+
+                if (tempoRestante <= 0) {
+                    clearInterval(timerInterval);
+                    tempoEsgotado();
+                }
+            }, 100);
+        }
+
+        function tempoEsgotado() {
+            if (bloqueado) return;
+            bloqueado = true;
+            tocarSom('erro');
+            const cards = document.querySelectorAll('.card-opcao');
+            cards.forEach(c => c.classList.add('disabled'));
+
+            setTimeout(() => {
+                indiceAtual++;
+                if (indiceAtual < blocosQuiz.length) {
+                    carregarPergunta();
+                } else {
+                    mostrarTelaFinal();
+                }
+            }, 1800);
+        }
+
+        function carregarPergunta() {
+            bloqueado = false;
+            clearInterval(timerInterval);
+            
+            const atual = blocosQuiz[indiceAtual];
+            const total = blocosQuiz.length;
+
+            document.getElementById('bloco-indicador').textContent = `Questão ${atual.bloco} de ${total}`;
+            document.getElementById('pergunta-texto').textContent = atual.pergunta;
+            document.getElementById('score-display').textContent = `⭐ ${pontuacao} pts`;
+            document.getElementById('best-display').textContent = `🏅 Melhor: ${melhorPontuacao}`;
+
+            const progresso = (indiceAtual / total) * 100;
+            document.getElementById('progress-fill').style.width = `${progresso}%`;
+
+            const grid = document.getElementById('grid-cards');
+            grid.innerHTML = '';
+
+            const opcoesEmbaralhadas = embaralhar(atual.opcoes);
+
+            opcoesEmbaralhadas.forEach(opcao => {
+                const card = document.createElement('button');
+                card.type = 'button';
+                card.className = 'card-opcao';
+                card.setAttribute('aria-label', `Resposta: ${opcao.texto}`);
+
+                const iconeDiv = document.createElement('div');
+                iconeDiv.className = 'card-icone';
+                iconeDiv.textContent = opcao.icone;
+                card.appendChild(iconeDiv);
+
+                const span = document.createElement('span');
+                span.textContent = opcao.texto;
+                card.appendChild(span);
+
+                card.addEventListener('click', () => selecionarResposta(opcao, card));
+                grid.appendChild(card);
+            });
+
+            document.getElementById('btn-falar').onclick = () => falarTexto(atual.pergunta);
+
+            iniciarTimer();
+        }
+
+        function selecionarResposta(opcao, cardElement) {
+            if (bloqueado) return;
+            bloqueado = true;
+            clearInterval(timerInterval);
+
+            const cards = document.querySelectorAll('.card-opcao');
+            cards.forEach(c => c.classList.add('disabled'));
+
+            if (opcao.correto) {
+                cardElement.classList.add('correto');
+
+                const badge = document.createElement('span');
+                badge.className = 'feedback-badge';
+                badge.textContent = '✓ Correto';
+                cardElement.appendChild(badge);
+
+                tocarSom('acerto');
+                
+                const bonusVelocidade = Math.floor(tempoRestante);
+                pontuacao += 10 + bonusVelocidade;
+                document.getElementById('score-display').textContent = `⭐ ${pontuacao} pts`;
+
+                const total = blocosQuiz.length;
+                const progresso = ((indiceAtual + 1) / total) * 100;
+                document.getElementById('progress-fill').style.width = `${progresso}%`;
+
+                setTimeout(() => {
+                    indiceAtual++;
+                    if (indiceAtual < blocosQuiz.length) {
+                        carregarPergunta();
+                    } else {
+                        mostrarTelaFinal();
+                    }
+                }, 1600);
+            } else {
+                cardElement.classList.add('incorreto');
+                
+                const badge = document.createElement('span');
+                badge.className = 'feedback-badge';
+                badge.style.background = 'var(--error)';
+                badge.textContent = '✗ Incorreto';
+                cardElement.appendChild(badge);
+
+                tocarSom('erro');
+
+                setTimeout(() => {
+                    cardElement.classList.remove('incorreto');
+                    cards.forEach(c => c.classList.remove('disabled'));
+                    bloqueado = false;
+                    iniciarTimer();
+                }, 1200);
+            }
+        }
+
+        function mostrarTelaFinal() {
+            clearInterval(timerInterval);
+            const total = blocosQuiz.length;
+            const percentual = (pontuacao / (total * 25)) * 100; // base aproximada com bônus
+
+            if (pontuacao > melhorPontuacao) {
+                melhorPontuacao = pontuacao;
+                localStorage.setItem('quiz_tecnico_saude_best', String(melhorPontuacao));
+            }
+
+            let medalha, titulo, mensagem;
+            if (pontuacao >= 250) {
+                medalha = "🏆"; titulo = "Especialista em Saúde e Biossegurança!";
+                mensagem = "Desempenho impecável! Domínio completo sobre o uso da água na assistência e nos serviços técnicos!";
+            } else if (pontuacao >= 180) {
+                medalha = "🥇"; titulo = "Profissional Destaque!";
+                mensagem = "Excelente conhecimento técnico aplicado à Enfermagem, Nutrição e Saúde Bucal!";
+            } else if (pontuacao >= 100) {
+                medalha = "🥈"; titulo = "Técnico em Evolução!";
+                mensagem = "Bom trabalho! Continue revisando os protocolos institucionais e de biossegurança.";
+            } else {
+                medalha = "🥉"; titulo = "Estudante Dedicado!";
+                mensagem = "Continue praticando e estudando os papéis fundamentais da água nos processos de saúde!";
+            }
+
+            tocarSom('vitoria');
+
+            if (typeof confetti === 'function') {
+                confetti({ particleCount: 140, spread: 90, origin: { y: 0.6 } });
+            }
+
+            const container = document.getElementById('quiz-container');
+            container.innerHTML = `
+                <div class="final-screen">
+                    <div class="medalha">${medalha}</div>
+                    <h2>${titulo}</h2>
+                    <div class="pontuacao-final">${pontuacao} pontos</div>
+                    <p>${mensagem}</p>
+                    <p style="font-size:13px;color:#94a3b8;">🏅 Melhor pontuação: ${melhorPontuacao} pts</p>
+                    <button class="btn-reiniciar" id="btn-reiniciar">🔄 Jogar Novamente</button>
+                </div>
+            `;
+            document.getElementById('btn-reiniciar').addEventListener('click', reiniciarQuiz);
+        }
+
+        function reiniciarQuiz() {
+            indiceAtual = 0;
+            pontuacao = 0;
+            bloqueado = false;
+
+            const container = document.getElementById('quiz-container');
+            container.innerHTML = `
+                <div class="top-bar-info">
+                    <div class="best-display" id="best-display">🏅 Melhor: ${melhorPontuacao}</div>
+                    <div class="score-display" id="score-display">⭐ 0 pts</div>
+                </div>
+                <div class="timer-bar">
+                    <div class="timer-fill" id="timer-fill"></div>
+                </div>
+                <div class="progress-container">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+                <div class="progress-bar-text" id="bloco-indicador">Questão 1 de ${blocosQuiz.length}</div>
+                <div class="question-header">
+                    <div class="question-box" id="pergunta-texto">Carregando pergunta...</div>
+                    <button class="btn-falar" id="btn-falar" title="Ouvir pergunta" aria-label="Ouvir pergunta">🔊</button>
+                </div>
+                <div class="cards-grid" id="grid-cards" role="group" aria-label="Opções de resposta"></div>
+            `;
+            carregarPergunta();
+        }
+
+        carregarPergunta();
+    </script>
+</body>
+</html>
