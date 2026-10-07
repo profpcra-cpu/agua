@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Desafio - Biossegurança e Água</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #0b1020;
+            --card-bg: rgba(30, 41, 59, 0.85);
+            --text-color: #f8fafc;
+            --primary: #10b981;
+            --primary-glow: rgba(16, 185, 129, 0.4);
+            --accent: #0ea5e9;
+            --success: #22c55e;
+            --error: #ef4444;
+            --gold: #fbbf24;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: radial-gradient(circle at 80% 0%, #064e3b 0%, #0b1020 60%);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex; justify-content: center; align-items: center;
+            padding: 16px;
+        }
+        .quiz-container {
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 28px;
+            padding: 24px;
+            width: 100%; max-width: 600px;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.7);
+            text-align: center;
+        }
+        .top-bar-info {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 16px; font-size: 13px; font-weight: 800;
+        }
+        .score-display {
+            background: rgba(251, 191, 36, 0.15);
+            color: var(--gold);
+            padding: 4px 10px; border-radius: 99px;
+            border: 1px solid rgba(251, 191, 36, 0.3);
+        }
+        .progress-container {
+            width: 100%; height: 8px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 99px;
+            margin-bottom: 16px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%; width: 0%;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            border-radius: 99px;
+            transition: width 0.5s ease;
+        }
+        .question-box {
+            font-size: 17px; font-weight: 700;
+            line-height: 1.4;
+            text-align: left;
+            margin-bottom: 16px;
+        }
+        .cards-grid {
+            display: grid; grid-template-columns: 1fr; gap: 12px;
+        }
+        .card-opcao {
+            background: rgba(255,255,255,0.04);
+            border: 2px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 14px 16px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            display: flex; align-items: center; gap: 12px;
+            text-align: left; width: 100%; color: inherit; font-family: inherit;
+        }
+        .card-opcao:hover:not(.disabled) {
+            border-color: var(--primary);
+            background: rgba(16, 185, 129, 0.12);
+        }
+        .card-opcao.disabled { cursor: not-allowed; pointer-events: none; }
+        .card-icone { font-size: 28px; min-width: 40px; text-align: center; }
+        .card-opcao span { font-size: 14px; font-weight: 600; line-height: 1.3; }
+        .card-opcao.correto {
+            background: rgba(34, 197, 94, 0.25) !important;
+            border-color: var(--success) !important;
+        }
+        .card-opcao.incorreto {
+            background: rgba(239, 68, 68, 0.25) !important;
+            border-color: var(--error) !important;
+        }
+        .btn-voltar {
+            margin-top: 16px; display: inline-block;
+            background: rgba(255,255,255,0.08); color: #cbd5e1;
+            padding: 8px 16px; border-radius: 8px; text-decoration: none;
+            font-size: 13px; font-weight: 700; border: 1px solid rgba(255,255,255,0.15);
+        }
+    </style>
+</head>
+<body>
+    <div class="quiz-container">
+        <div class="top-bar-info">
+            <span id="bloco-indicador">Desafio 1 de 5</span>
+            <div class="score-display" id="score-display">⭐ 0 pts</div>
+        </div>
+        <div class="progress-container">
+            <div class="progress-fill" id="progress-fill"></div>
+        </div>
+        <div class="question-box" id="pergunta-texto">Carregando desafio de biossegurança...</div>
+        <div class="cards-grid" id="grid-cards"></div>
+        <a href="index.html" class="btn-voltar">⬅ Voltar ao Brain Hub</a>
+    </div>
+
+    <script>
+        const desafios = [
+            {
+                bloco: 1,
+                pergunta: "Em Saúde Bucal e clínicas odontológicas, as linhas de água dos equipos (seringas tríplices e peças de mão) são propensas à formação de:",
+                opcoes: [
+                    { texto: "Biofilmes bacterianos internos devido ao estagnamento da água e diâmetro reduzido das tubulações.", icone: "🦠", correto: true },
+                    { texto: "Cristais de ouro puro decorrentes da passagem de anestésicos locais.", icone: "🪙", correto: false },
+                    { texto: "Camadas espessas de ferrugem industrial em equipos fabricados em polímero.", icone: "⚙️", correto: false },
+                    { texto: "Esporos fúngicos inofensivos que auxiliam na lubrificação das brocas.", icone: "🍄", correto: false }
+                ]
+            },
+            {
+                bloco: 2,
+                pergunta: "Qual é a conduta preventiva recomendada no início de cada turno de atendimento em consultórios odontológicos para reduzir a carga microbiana nas mangueiras de água dos equipos?",
+                opcoes: [
+                    { texto: "Realizar a purga (descarga de água) das linhas por pelo menos 2 a 3 minutos antes de atender o primeiro paciente.", icone: "🚿", correto: true },
+                    { texto: "Substituir integralmente todas as mangueiras de silicone a cada 24 horas.", icone: "🔧", correto: false },
+                    { texto: "Aquecer a água interna do reservatório central a exatos 120°C por 10 minutos.", icone: "🔥", correto: false },
+                    { texto: "Utilizar água sanitária pura diretamente nos reservatórios durante os procedimentos.", icone: "🧪", correto: false }
+                ]
+            },
+            {
+                bloco: 3,
+                pergunta: "No contexto da Central de Material e Esterilização (CME) na Enfermagem, a água utilizada na lavagem automatizada e enxágue de instrumentais cirúrgicos deve possuir qual característica físico-química principal?",
+                opcoes: [
+                    { texto: "Baixa concentração de sais minerais (água deionizada ou tratada) para evitar manchas e corrosão.", icone: "💧", correto: true },
+                    { texto: "Alta concentração de cloro livre ativo para desinfecção instantânea do metal.", icone: "⚡", correto: false },
+                    { texto: "Temperatura constante mantida obrigatoriamente a 4°C (água gelada).", icone: "❄️", correto: false },
+                    { texto: "Presença de aditivos fluorados para proteção do esmalte dos instrumentais.", icone: "🛡️", correto: false }
+                ]
+            },
+            {
+                bloco: 4,
+                pergunta: "Por que o uso de água comum da rede pública sem filtragem adequada em autoclaves hospitalares compromete os instrumentais e o próprio equipamento?",
+                opcoes: [
+                    { texto: "O depósito de cálcio e magnésio forma incrustações que danificam resistências e entopem válvulas e cânulas.", icone: "⚙️", correto: true },
+                    { texto: "A água comum dissolve completamente o aço inoxidável cirúrgico em poucos ciclos.", icone: "🧪", correto: false },
+                    { texto: "O cloro presente impede totalmente a elevação da temperatura acima de 80°C.", icone: "🌡️", correto: false },
+                    { texto: "Gera vapores altamente tóxicos que contaminam o ambiente estéril da sala.", icone: "⚠️", correto: false }
+                ]
+            },
+            {
+                bloco: 5,
+                pergunta: "Durante a paramentação e lavagem cirúrgica das mãos pela equipe de saúde, por que as torneiras devem ser acionadas sem o contato direto das mãos limpas?",
+                opcoes: [
+                    { texto: "Para prevenir a recontaminação das mãos já higienizadas através de superfícies manipuladas.", icone: "🧼", correto: true },
+                    { texto: "Para economizar o fluxo de água potável exigido pelas normas ambientais.", icone: "📉", correto: false },
+                    { texto: "Para garantir que a pressão da água permaneça estável em todas as pias do hospital.", icone: "📊", correto: false },
+                    { texto: "Para evitar o desgaste mecânico dos registros de metal cromado.", icone: "🔩", correto: false }
+                ]
+            }
+        ];
+
+        let indiceAtual = 0;
+        let pontuacao = 0;
+        let bloqueado = false;
+
+        function carregarDesafio() {
+            bloqueado = false;
+            const atual = desafios[indiceAtual];
+            document.getElementById('bloco-indicador').textContent = `Desafio ${indiceAtual + 1} de ${desafios.length}`;
+            document.getElementById('pergunta-texto').textContent = atual.pergunta;
+            document.getElementById('score-display').textContent = `⭐ ${pontuacao} pts`;
+            document.getElementById('progress-fill').style.width = `${((indiceAtual) / desafios.length) * 100}%`;
+
+            const grid = document.getElementById('grid-cards');
+            grid.innerHTML = '';
+
+            const opcoes = [...atual.opcoes].sort(() => Math.random() - 0.5);
+
+            opcoes.forEach(op => {
+                const card = document.createElement('button');
+                card.className = 'card-opcao';
+                card.innerHTML = `<div class="card-icone">${op.icone}</div><span>${op.texto}</span>`;
+                card.onclick = () => selecionar(op, card);
+                grid.appendChild(card);
+            });
+        }
+
+        function selecionar(op, card) {
+            if (bloqueado) return;
+            bloqueado = true;
+            const cards = document.querySelectorAll('.card-opcao');
+            cards.forEach(c => c.classList.add('disabled'));
+
+            if (op.correto) {
+                card.classList.add('correto');
+                pontuacao += 20;
+                setTimeout(() => {
+                    indiceAtual++;
+                    if (indiceAtual < desafios.length) {
+                        carregarDesafio();
+                    } else {
+                        finalizar();
+                    }
+                }, 1400);
+            } else {
+                card.classList.add('incorreto');
+                setTimeout(() => {
+                    cards.forEach(c => c.classList.remove('disabled'));
+                    bloqueado = false;
+                    card.classList.remove('incorreto');
+                }, 1200);
+            }
+        }
+
+        function finalizar() {
+            if (typeof confetti === 'function') confetti({ particleCount: 120, spread: 80 });
+            document.querySelector('.quiz-container').innerHTML = `
+                <div style="text-align:center; padding: 20px;">
+                    <div style="font-size:70px; margin-bottom:10px;">🔬</div>
+                    <h2 style="color:var(--gold); margin-bottom:10px;">Desafio Concluído!</h2>
+                    <p style="font-size:18px; font-weight:bold; margin-bottom:15px;">Pontuação Total: ${pontuacao} pontos</p>
+                    <p style="color:#94a3b8; font-size:14px; margin-bottom:20px;">Parabéns! Excelente domínio sobre biossegurança, controle de biofilmes e tratamento de água!</p>
+                    <a href="index.html" class="btn-voltar" style="display:inline-block; padding:12px 24px; background:var(--primary); color:#fff; border-radius:12px;">Voltar ao Brain Hub</a>
+                </div>
+            `;
+        }
+
+        carregarDesafio();
+    </script>
+</body>
+</html>
